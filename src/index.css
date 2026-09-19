@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1, h2, h3 {
+    @apply font-display font-medium tracking-tight;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    @apply outline-2 outline-offset-2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
