@@ -2,6 +2,7 @@ import { useState } from 'react'
 import LocationForm from './components/LocationForm.jsx'
 import SystemForm from './components/SystemForm.jsx'
 import ForecastResults from './components/ForecastResults.jsx'
+import LoadingOverlay from './components/LoadingOverlay.jsx'
 import { requestForecast } from './services/forecastApi.js'
 
 const DEFAULT_SITE = {
@@ -43,6 +44,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cream">
+      <LoadingOverlay phase={phase} />
       <div className="border-b border-border bg-white">
         <div className="max-w-[1180px] mx-auto px-8 py-4 flex items-center gap-3">
           <span className="font-display font-semibold text-lg text-navy">PV Mart</span>
@@ -60,7 +62,7 @@ export default function App() {
           </h1>
           <p className="text-navy-soft text-[1.02rem] leading-relaxed">
             A physics-grounded, self-selecting forecast of real energy output over
-            ten years — for any site in the country.
+            ten years — for any site in the country, not just a handful of demo cities.
           </p>
         </header>
 

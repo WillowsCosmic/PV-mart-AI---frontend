@@ -1,6 +1,9 @@
+import { useRef, useState } from 'react'
 import {
   Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart,
 } from 'recharts'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 function Metric({ label, value, unit }) {
   return (
@@ -30,14 +33,62 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function ForecastResults({ result }) {
   const { champion_model, scoreboard, annual_forecast, summary } = result
+  const captureRef = useRef(null)
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExportPDF() {
+    if (!captureRef.current) return
+    setExporting(true)
+    try {
+      const canvas = await html2canvas(captureRef.current, {
+        scale: 2,
+        backgroundColor: '#fdf6e3',
+      })
+      const imgData = canvas.toDataURL('image/png')
+
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = pageWidth
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      const safeModelName = champion_model.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+      pdf.save(`pv-mart-forecast-${safeModelName}.pdf`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-display font-semibold text-navy">10-year forecast</h2>
-        <p className="text-navy-soft text-sm mt-1">
-          Champion model: <strong className="text-orange font-semibold">{champion_model}</strong>
-        </p>
+      <div ref={captureRef} className="flex flex-col gap-6 bg-cream p-1">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-semibold text-navy">10-year forecast</h2>
+          <p className="text-navy-soft text-sm mt-1">
+            Champion model: <strong className="text-orange font-semibold">{champion_model}</strong>
+          </p>
+        </div>
+        <button
+          onClick={handleExportPDF}
+          disabled={exporting}
+          className="shrink-0 flex items-center gap-2 bg-white border border-border text-navy text-sm font-medium px-4 py-2 rounded-lg hover:bg-cream-card transition-colors disabled:opacity-50 disabled:cursor-wait"
+        >
+          {exporting ? 'Exporting…' : 'Export PDF'}
+        </button>
       </div>
 
       <div className="grid grid-cols-5 gap-px bg-border border border-border rounded-2xl overflow-hidden">
@@ -100,6 +151,7 @@ export default function ForecastResults({ result }) {
               ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   )
