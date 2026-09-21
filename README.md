@@ -47,8 +47,6 @@ pv-mart-forecast-ui/
                               every 8s until completed or failed
 
     components/
-      BrandMark.jsx           Abstract sun-motif mark in brand colors
-                               (not a copy of PV Mart's actual logo)
       LocationForm.jsx        Lat/lng input + quick-select presets
       SystemForm.jsx          Panel / inverter / battery dropdowns
                                (full catalog, matches backend's
