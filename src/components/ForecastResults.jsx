@@ -37,11 +37,16 @@ export default function ForecastResults({ result }) {
   const { champion_model, scoreboard, annual_forecast, summary, historical_monthly_avg } = result
   const captureRef = useRef(null)
   const [exporting, setExporting] = useState(false)
+  const [tableModeForExport, setTableModeForExport] = useState(false)
 
   async function handleExportPDF() {
     if (!captureRef.current) return
     setExporting(true)
+    setTableModeForExport(true)
     try {
+      // Wait for the chart -> table swap to actually render before capturing
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
       const canvas = await html2canvas(captureRef.current, {
         scale: 2,
         backgroundColor: '#fdf6e3',
@@ -70,6 +75,7 @@ export default function ForecastResults({ result }) {
       const safeModelName = champion_model.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
       pdf.save(`pv-mart-forecast-${safeModelName}.pdf`)
     } finally {
+      setTableModeForExport(false)
       setExporting(false)
     }
   }
@@ -136,24 +142,47 @@ export default function ForecastResults({ result }) {
           <p className="text-xs text-navy-soft/70 mb-4">
             Average monthly generation across 25 years of historical weather data
           </p>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={historical_monthly_avg} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="#ece2c6" strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tickFormatter={(m) => MONTH_NAMES[m - 1]}
-                stroke="#4a5170"
-                tick={{ fontSize: 11 }}
-              />
-              <YAxis stroke="#4a5170" tick={{ fontSize: 11 }} width={50} />
-              <Tooltip
-                formatter={(value) => [`${value.toLocaleString()} kWh`, 'Avg. output']}
-                labelFormatter={(m) => MONTH_NAMES[m - 1]}
-                contentStyle={{ background: '#fff', border: '1px solid #ece2c6', borderRadius: 8, fontSize: 12 }}
-              />
-              <Bar dataKey="avg_kwh" fill="#f5841f" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+
+          {tableModeForExport ? (
+            <table className="w-full border-collapse font-mono text-[0.83rem]">
+              <thead>
+                <tr>
+                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-2 border-b border-border">Month</th>
+                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-2 border-b border-border">Avg. output (kWh)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historical_monthly_avg
+                  .slice()
+                  .sort((a, b) => a.month - b.month)
+                  .map((row) => (
+                    <tr key={row.month}>
+                      <td className="px-2.5 py-1.5 border-b border-border text-navy">{MONTH_NAMES[row.month - 1]}</td>
+                      <td className="px-2.5 py-1.5 border-b border-border text-navy">{row.avg_kwh?.toLocaleString()}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={historical_monthly_avg} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                <CartesianGrid stroke="#ece2c6" strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={(m) => MONTH_NAMES[m - 1]}
+                  stroke="#4a5170"
+                  tick={{ fontSize: 11 }}
+                />
+                <YAxis stroke="#4a5170" tick={{ fontSize: 11 }} width={50} />
+                <Tooltip
+                  formatter={(value) => [`${value.toLocaleString()} kWh`, 'Avg. output']}
+                  labelFormatter={(m) => MONTH_NAMES[m - 1]}
+                  contentStyle={{ background: '#fff', border: '1px solid #ece2c6', borderRadius: 8, fontSize: 12 }}
+                />
+                <Bar dataKey="avg_kwh" fill="#f5841f" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 
