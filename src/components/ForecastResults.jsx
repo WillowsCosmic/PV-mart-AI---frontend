@@ -34,7 +34,7 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function ForecastResults({ result }) {
-  const { champion_model, scoreboard, annual_forecast, summary, historical_monthly_avg } = result
+  const { champion_model, scoreboard, annual_forecast, summary, historical_monthly_avg, historical_monthly_full } = result
   const captureRef = useRef(null)
   const [exporting, setExporting] = useState(false)
   const [tableModeForExport, setTableModeForExport] = useState(false)
@@ -140,25 +140,29 @@ export default function ForecastResults({ result }) {
             Historical seasonal pattern
           </h3>
           <p className="text-xs text-navy-soft/70 mb-4">
-            Average monthly generation across 25 years of historical weather data
+            {tableModeForExport
+              ? 'Full 25-year historical monthly generation record'
+              : 'Average monthly generation across 25 years of historical weather data'}
           </p>
 
           {tableModeForExport ? (
-            <table className="w-full border-collapse font-mono text-[0.83rem]">
+            <table className="w-full border-collapse font-mono text-[0.78rem]">
               <thead>
                 <tr>
-                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-2 border-b border-border">Month</th>
-                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-2 border-b border-border">Avg. output (kWh)</th>
+                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-1.5 border-b border-border">Year</th>
+                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-1.5 border-b border-border">Month</th>
+                  <th className="text-left text-navy-soft/70 font-normal px-2.5 py-1.5 border-b border-border">Output (kWh)</th>
                 </tr>
               </thead>
               <tbody>
-                {historical_monthly_avg
+                {(historical_monthly_full ?? [])
                   .slice()
-                  .sort((a, b) => a.month - b.month)
+                  .sort((a, b) => a.year - b.year || a.month - b.month)
                   .map((row) => (
-                    <tr key={row.month}>
-                      <td className="px-2.5 py-1.5 border-b border-border text-navy">{MONTH_NAMES[row.month - 1]}</td>
-                      <td className="px-2.5 py-1.5 border-b border-border text-navy">{row.avg_kwh?.toLocaleString()}</td>
+                    <tr key={`${row.year}-${row.month}`}>
+                      <td className="px-2.5 py-1 border-b border-border text-navy">{row.year}</td>
+                      <td className="px-2.5 py-1 border-b border-border text-navy">{MONTH_NAMES[row.month - 1]}</td>
+                      <td className="px-2.5 py-1 border-b border-border text-navy">{row.kwh?.toLocaleString()}</td>
                     </tr>
                   ))}
               </tbody>
